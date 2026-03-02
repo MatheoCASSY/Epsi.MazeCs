@@ -12,9 +12,11 @@ var grid = new CellType[50, 20];
 const int width = 50;
 const int height = 20;
 
-// Décalage vertical dans la console (nombre de lignes du titre)
 const int offsetY = 3;
 const int offsetX = 0;
+
+const int marginYMessage = 3;
+const int messageHeight = 5;
 
 // ── Génération du labyrinthe par « recursive backtracker » ──
 const int cellW = width / 2;   // 25
@@ -155,7 +157,7 @@ while (!won)
 }
 
 // ── Écran de victoire ──
-Console.SetCursorPosition(0, offsetY + height + 3);
+Console.SetCursorPosition(0, offsetY + height + marginYMessage);
 if (won)
 {
     Console.ForegroundColor = ConsoleColor.Green;
@@ -172,7 +174,7 @@ else
     Console.ResetColor();
 }
 
-Console.SetCursorPosition(0, offsetY + height + 8);
+Console.SetCursorPosition(0, offsetY + height + marginYMessage + messageHeight);
 Console.WriteLine("  Appuyez sur une key pour quitter...");
 Console.CursorVisible = true;
 Console.ReadKey(true);
