@@ -6,21 +6,13 @@ const int offsetY = 3;
 const int offsetX = 0;
 
 const int marginYMessage = 3;
-const int messageHeight = 5;
 
-const string sHeader = """
-    ╔══════════════════════════════════════════════════╗
-    ║          🏃 LABYRINTHE ASCII  C#  🏃             ║
-    ╚══════════════════════════════════════════════════╝
-    """;
-const string sInstructions = "  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [Échap] Quitter";
+const string sHeader = "🏃 LABYRINTHE ASCII C# 🏃";
 const string sWin = """
-    ╔════════════════════════════════╗
-    ║   🎉  FÉLICITATIONS !  🎉      ║
-    ║   Vous avez trouvé la sortie ! ║
-    ╚════════════════════════════════╝
+    🎉  FÉLICITATIONS !  🎉
+    Vous avez trouvé la sortie !
 """;
-const string sCanceled = "\n  Partie abandonnée. À bientôt !";
+const string sCanceled = "Partie abandonnée. À bientôt !";
 const string sPressKey = "  Appuyez sur une key pour quitter...";
 
 const ConsoleColor SuccessColor     = ConsoleColor.Green;
@@ -34,6 +26,8 @@ const ConsoleColor ExitColor        = ConsoleColor.Green;
 #endregion 
 
 var grid = new CellType[width, height];
+var keyboard = new KeyboardController();
+var screen = new ConsoleScreen();
 
 var playerPosition = Vec2d.Zero;
 var mode = State.Playing;
@@ -43,24 +37,15 @@ DrawScreen();
 
 while (mode == State.Playing)
 {
-    var key = Console.ReadKey(true).Key;
+    var input = keyboard.ReadInput();
 
-    if (key == ConsoleKey.Escape)
+    if (input.IsCanceled)
     {
         mode = State.Canceled;
         continue;
     }
 
-    var move = key switch
-    {
-        ConsoleKey.Z or ConsoleKey.UpArrow => new Vec2d(0, -1),
-        ConsoleKey.S or ConsoleKey.DownArrow => new Vec2d(0, 1),
-        ConsoleKey.Q or ConsoleKey.LeftArrow => new Vec2d(-1, 0),
-        ConsoleKey.D or ConsoleKey.RightArrow => new Vec2d(1, 0),
-        _ => (Vec2d?)null
-    };
-
-    if (move is not { } delta)
+    if (input.Move is not { } delta)
     {
         continue;
     }
@@ -76,43 +61,43 @@ while (mode == State.Playing)
     }
 }
 
-DrawTextColorXY(new Vec2d(0, offsetY + height + marginYMessage),
-    mode == State.Won 
-    ? (sWin, SuccessColor) 
-    : (sCanceled, DangerColor)
-);
-DrawTextXY(new Vec2d(0, offsetY + height + marginYMessage + messageHeight), sPressKey);
+var messagePosition = new Vec2d(0, offsetY + height + marginYMessage);
+var messageHeight = 1;
+
+if (mode == State.Won)
+{
+    messageHeight = screen.DrawFramedText(messagePosition, sWin, SuccessColor);
+}
+else
+{
+    screen.DrawText(messagePosition, sCanceled, DangerColor);
+}
+
+screen.DrawText(messagePosition.Add(new Vec2d(0, messageHeight + 1)), sPressKey);
 Console.CursorVisible = true;
 Console.ReadKey(true);
 
 #region Functions
 
-void DrawTextXY(Vec2d position, string text, ConsoleColor? color = null)
-{
-    Console.SetCursorPosition(position.X, position.Y);
-    if(color.HasValue)
-    {
-        Console.ForegroundColor = color.Value;
-    }
-    Console.Write(text);
-    Console.ResetColor();
-}
-
-void DrawTextColorXY(Vec2d position, (string text, ConsoleColor color) info) =>
-    DrawTextXY(position, info.text, info.color);
-
 CellType GetCell(Vec2d position) => grid[position.X, position.Y];
 
 void SetCell(Vec2d position, CellType type) => grid[position.X, position.Y] = type;
 
-void DrawCell(Vec2d position) => DrawTextColorXY(
+void DrawCell(Vec2d position) => screen.DrawText(
     new Vec2d(offsetX, offsetY).Add(position),
     GetCell(position) switch
     {
-        CellType.Wall   => ("█", WallColor),
-        CellType.Player => ("@", PlayerColor),
-        CellType.Exit   => ("★", ExitColor),
-        _               => ("·", CorridorColor)
+        CellType.Wall   => "█",
+        CellType.Player => "@",
+        CellType.Exit   => "★",
+        _               => "·"
+    },
+    GetCell(position) switch
+    {
+        CellType.Wall   => WallColor,
+        CellType.Player => PlayerColor,
+        CellType.Exit   => ExitColor,
+        _               => CorridorColor
     });
 
 void UpdateCell(Vec2d position, CellType type)
@@ -126,7 +111,7 @@ void DrawScreen()
     Console.Clear();
     Console.CursorVisible = false;
 
-    DrawTextXY(Vec2d.Zero, sHeader, InfoColor);
+    screen.DrawFramedText(Vec2d.Zero, sHeader, InfoColor);
     for (var y = 0; y < height; y++)
     {
         for (var x = 0; x < width; x++)
@@ -134,7 +119,7 @@ void DrawScreen()
             DrawCell(new Vec2d(x, y));
         }
     }
-    DrawTextXY(new Vec2d(0, offsetY + height), sInstructions, InstructionColor);
+    screen.DrawText(new Vec2d(0, offsetY + height), keyboard.Instructions, InstructionColor);
 }
 
 void GenerateMaze(CellType[,] grid, Vec2d playerStart)
