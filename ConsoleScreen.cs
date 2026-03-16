@@ -2,14 +2,27 @@ sealed class ConsoleScreen
 {
     public void DrawText(Vec2d position, string text, ConsoleColor? color = null)
     {
-        Console.SetCursorPosition(position.X, position.Y);
-        if (color.HasValue)
-        {
-            Console.ForegroundColor = color.Value;
-        }
+        if (position.X < 0 || position.Y < 0)
+            return;
 
-        Console.Write(text);
-        Console.ResetColor();
+        if (position.X >= Console.BufferWidth || position.Y >= Console.BufferHeight)
+            return;
+
+        try
+        {
+            Console.SetCursorPosition(position.X, position.Y);
+            if (color.HasValue)
+            {
+                Console.ForegroundColor = color.Value;
+            }
+
+            Console.Write(text);
+            Console.ResetColor();
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Ignore transient out-of-range values if the console is resized while drawing.
+        }
     }
 
     public int DrawFramedText(Vec2d position, string text, ConsoleColor? color = null)

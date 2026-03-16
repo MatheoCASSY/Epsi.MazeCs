@@ -1,6 +1,6 @@
 #region Constants
-const int width  = 50;
-const int height = 20;
+const int requestedWidth  = 50;
+const int requestedHeight = 20;
 
 const int offsetY = 3;
 const int offsetX = 0;
@@ -20,7 +20,11 @@ const ConsoleColor InstructionColor = ConsoleColor.DarkCyan;
 
 var keyboard = new KeyboardController();
 var screen   = new ConsoleScreen();
-var maze     = new Maze(new MazeGen(width, height));
+var maxMazeWidth  = Math.Max(3, Console.BufferWidth - offsetX);
+var maxMazeHeight = Math.Max(3, Console.BufferHeight - offsetY - 1); // Keep one line for controls
+var mazeWidth     = Math.Min(requestedWidth, maxMazeWidth);
+var mazeHeight    = Math.Min(requestedHeight, maxMazeHeight);
+var maze          = new Maze(new MazeGen(mazeWidth, mazeHeight));
 var player   = new Player(maze.StartPosition);
 var offset   = new Vec2d(offsetX, offsetY);
 var mode     = State.Playing;
@@ -30,7 +34,7 @@ Console.CursorVisible = false;
 screen.DrawFramedText(Vec2d.Zero, sHeader, InfoColor);
 maze.Draw(screen, offset);
 player.Draw(screen, offset);
-screen.DrawText(new Vec2d(0, offsetY + height), keyboard.Instructions, InstructionColor);
+screen.DrawText(new Vec2d(0, offsetY + maze.Height), keyboard.Instructions, InstructionColor);
 
 while (mode == State.Playing)
 {
@@ -49,7 +53,7 @@ while (mode == State.Playing)
         mode = State.Won;
 }
 
-var messagePosition = new Vec2d(0, offsetY + height + marginYMessage);
+var messagePosition = new Vec2d(0, offsetY + maze.Height + marginYMessage);
 var messageHeight   = 1;
 
 if (mode == State.Won)
