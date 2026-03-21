@@ -1,11 +1,12 @@
 sealed class KeyboardController : IController
 {
-    public string Instructions => "  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [Échap] Quitter";
+    public string Instructions => "  [Z/↑] Haut   [S/↓] Bas   [Q/←] Gauche   [D/→] Droite   [E/Espace] Ramasser   [Échap] Quitter";
 
     public bool IsUpPressed { get; private set; }
     public bool IsDownPressed { get; private set; }
     public bool IsLeftPressed { get; private set; }
     public bool IsRightPressed { get; private set; }
+    public bool IsPickupPressed { get; private set; }
     public bool IsEscPressed { get; private set; }
 
     public void ReadInput()
@@ -14,6 +15,7 @@ sealed class KeyboardController : IController
         IsDownPressed = false;
         IsLeftPressed = false;
         IsRightPressed = false;
+        IsPickupPressed = false;
         IsEscPressed = false;
 
         var key = Console.ReadKey(true).Key;
@@ -35,6 +37,10 @@ sealed class KeyboardController : IController
             case ConsoleKey.D:
             case ConsoleKey.RightArrow:
                 IsRightPressed = true;
+                break;
+            case ConsoleKey.E:
+            case ConsoleKey.Spacebar:
+                IsPickupPressed = true;
                 break;
             case ConsoleKey.Escape:
                 IsEscPressed = true;

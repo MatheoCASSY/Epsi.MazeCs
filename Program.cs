@@ -29,6 +29,33 @@ var maze          = new Maze(new MazeGen(mazeWidth, mazeHeight, coinSpawnProbabi
 var player   = new Player(maze.StartPosition, keyboard);
 var offset   = new Vec2d(offsetX, offsetY);
 var mode     = State.Playing;
+var statusPosition = new Vec2d(0, offsetY + maze.Height + 1);
+var feedbackPosition = new Vec2d(0, offsetY + maze.Height + 2);
+
+void DrawHud()
+{
+    var statusText = $"Score: {player.Points}   Inventaire: {player.Inventory.Count}";
+    var padded = statusText.PadRight(Console.BufferWidth - 1);
+    screen.DrawText(statusPosition, padded, InfoColor);
+}
+
+void DrawFeedback(string message, ConsoleColor color)
+{
+    var padded = message.PadRight(Console.BufferWidth - 1);
+    screen.DrawText(feedbackPosition, padded, color);
+}
+
+player.PointsIncreased += (earnedPoints, totalPoints) =>
+{
+    DrawHud();
+    DrawFeedback($"+{earnedPoints} points (total: {totalPoints})", SuccessColor);
+};
+
+player.InventoryChanged += inventory =>
+{
+    DrawHud();
+    DrawFeedback($"Inventaire mis à jour ({inventory.Count} objet(s)).", InfoColor);
+};
 
 Console.Clear();
 Console.CursorVisible = false;
@@ -36,6 +63,8 @@ screen.DrawFramedText(Vec2d.Zero, sHeader, InfoColor);
 maze.Draw(screen, offset);
 player.Draw(screen, offset);
 screen.DrawText(new Vec2d(0, offsetY + maze.Height), keyboard.Instructions, InstructionColor);
+DrawHud();
+DrawFeedback("Ramassez avec E ou Espace.", InstructionColor);
 
 while (mode == State.Playing)
 {
