@@ -22,14 +22,14 @@ sealed class Maze
 
     public bool IsInBounds(Vec2d position) => position.IsInBounds(Width, Height);
 
-    public void Draw(ConsoleScreen screen, Vec2d offset)
+    public void Draw(IGridDisplay screen, Vec2d offset)
     {
         for (var y = 0; y < Height; y++)
             for (var x = 0; x < Width; x++)
                 DrawCell(screen, offset, new Vec2d(x, y));
     }
 
-    public void DrawCell(ConsoleScreen screen, Vec2d offset, Vec2d position)
+    public void DrawCell(IGridDisplay screen, Vec2d offset, Vec2d position)
     {
         var cell = GetCell(position);
         screen.DrawText(

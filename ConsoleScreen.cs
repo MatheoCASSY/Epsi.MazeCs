@@ -1,4 +1,4 @@
-sealed class ConsoleScreen
+sealed class ConsoleScreen : IGridDisplay
 {
     public void DrawText(Vec2d position, string text, ConsoleColor? color = null)
     {

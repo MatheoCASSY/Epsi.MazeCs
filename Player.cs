@@ -6,7 +6,7 @@ sealed class Player(Vec2d startPosition, IController controller)
 
     public bool IsExitRequested => controller.IsEscPressed;
 
-    public bool TryMove(Maze maze, ConsoleScreen screen, Vec2d offset)
+    public bool TryMove(Maze maze, IGridDisplay screen, Vec2d offset)
     {
         controller.ReadInput();
 
@@ -23,7 +23,7 @@ sealed class Player(Vec2d startPosition, IController controller)
         return TryMove(movement, maze, screen, offset);
     }
 
-    public bool TryMove(Vec2d delta, Maze maze, ConsoleScreen screen, Vec2d offset)
+    public bool TryMove(Vec2d delta, Maze maze, IGridDisplay screen, Vec2d offset)
     {
         var next = Position.Add(delta);
 
@@ -39,7 +39,7 @@ sealed class Player(Vec2d startPosition, IController controller)
         return reachedExit;
     }
 
-    public void Draw(ConsoleScreen screen, Vec2d offset)
+    public void Draw(IGridDisplay screen, Vec2d offset)
     {
         screen.DrawText(offset.Add(Position), "@", PlayerColor);
     }

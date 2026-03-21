@@ -19,7 +19,7 @@ const ConsoleColor InstructionColor = ConsoleColor.DarkCyan;
 #endregion
 
 IController keyboard = new KeyboardController();
-var screen   = new ConsoleScreen();
+IGridDisplay screen   = new ConsoleScreen();
 var maxMazeWidth  = Math.Max(3, Console.BufferWidth - offsetX);
 var maxMazeHeight = Math.Max(3, Console.BufferHeight - offsetY - 1); // Keep one line for controls
 var mazeWidth     = Math.Min(requestedWidth, maxMazeWidth);
