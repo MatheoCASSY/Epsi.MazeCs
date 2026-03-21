@@ -26,9 +26,13 @@ sealed class Player(Vec2d startPosition, IController controller)
     public bool TryMove(Vec2d delta, Maze maze, IGridDisplay screen, Vec2d offset)
     {
         var next = Position.Add(delta);
+
+        if (!maze.IsInBounds(next))
+            return false;
+
         var nextCell = maze.GetCell(next);
 
-        if (!maze.IsInBounds(next) || nextCell.IsSolid)
+        if (nextCell.IsSolid)
             return false;
 
         var reachedExit = nextCell.IsExit;

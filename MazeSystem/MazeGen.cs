@@ -1,4 +1,4 @@
-sealed class MazeGen(int width, int height) : IMazeGenerator
+sealed class MazeGen(int width, int height, double coinProbability) : IMazeGenerator
 {
     private static readonly Vec2d[] Directions =
     [
@@ -18,6 +18,9 @@ sealed class MazeGen(int width, int height) : IMazeGenerator
 
     public Cell[,] Generate()
     {
+        if (coinProbability < 0 || coinProbability > 1)
+            throw new ArgumentOutOfRangeException(nameof(coinProbability), "Coin probability must be between 0 and 1.");
+
         var grid = new Cell[width, height];
         var rng = new Random();
 
@@ -35,18 +38,25 @@ sealed class MazeGen(int width, int height) : IMazeGenerator
 
         void GenerateRec(Vec2d position)
         {
-            grid[position.X, position.Y] = new Room();
+            grid[position.X, position.Y] = CreateRoom(rng);
             foreach (var dir in Orders[rng.Next(Orders.Length)])
             {
                 var direction = Directions[dir];
                 var next = position.Add(direction.Multiply(2));
 
-                if (next.IsInBounds(width, height) && !grid[next.X, next.Y].IsSolid)
+                if (next.IsInBounds(width, height) && grid[next.X, next.Y].IsSolid)
                 {
-                    grid[position.Midpoint(next).X, position.Midpoint(next).Y] = new Room();
+                    grid[position.Midpoint(next).X, position.Midpoint(next).Y] = CreateRoom(rng);
                     GenerateRec(next);
                 }
             }
+        }
+
+        Room CreateRoom(Random random)
+        {
+            return random.NextDouble() < coinProbability
+                ? new Room(new Coin())
+                : new Room();
         }
     }
 }
