@@ -18,14 +18,14 @@ const ConsoleColor InfoColor        = ConsoleColor.Cyan;
 const ConsoleColor InstructionColor = ConsoleColor.DarkCyan;
 #endregion
 
-var keyboard = new KeyboardController();
+IController keyboard = new KeyboardController();
 var screen   = new ConsoleScreen();
 var maxMazeWidth  = Math.Max(3, Console.BufferWidth - offsetX);
 var maxMazeHeight = Math.Max(3, Console.BufferHeight - offsetY - 1); // Keep one line for controls
 var mazeWidth     = Math.Min(requestedWidth, maxMazeWidth);
 var mazeHeight    = Math.Min(requestedHeight, maxMazeHeight);
 var maze          = new Maze(new MazeGen(mazeWidth, mazeHeight));
-var player   = new Player(maze.StartPosition);
+var player   = new Player(maze.StartPosition, keyboard);
 var offset   = new Vec2d(offsetX, offsetY);
 var mode     = State.Playing;
 
@@ -38,19 +38,17 @@ screen.DrawText(new Vec2d(0, offsetY + maze.Height), keyboard.Instructions, Inst
 
 while (mode == State.Playing)
 {
-    var input = keyboard.ReadInput();
+    if (player.TryMove(maze, screen, offset))
+    {
+        mode = State.Won;
+        continue;
+    }
 
-    if (input.IsCanceled)
+    if (player.IsExitRequested)
     {
         mode = State.Canceled;
         continue;
     }
-
-    if (input.Move is not { } delta)
-        continue;
-
-    if (player.TryMove(delta, maze, screen, offset))
-        mode = State.Won;
 }
 
 var messagePosition = new Vec2d(0, offsetY + maze.Height + marginYMessage);

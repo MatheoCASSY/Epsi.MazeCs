@@ -1,8 +1,27 @@
-sealed class Player(Vec2d startPosition)
+sealed class Player(Vec2d startPosition, IController controller)
 {
     private static readonly ConsoleColor PlayerColor = ConsoleColor.Yellow;
 
     public Vec2d Position { get; private set; } = startPosition;
+
+    public bool IsExitRequested => controller.IsEscPressed;
+
+    public bool TryMove(Maze maze, ConsoleScreen screen, Vec2d offset)
+    {
+        controller.ReadInput();
+
+        var delta =
+            controller.IsUpPressed ? new Vec2d(0, -1) :
+            controller.IsDownPressed ? new Vec2d(0, 1) :
+            controller.IsLeftPressed ? new Vec2d(-1, 0) :
+            controller.IsRightPressed ? new Vec2d(1, 0) :
+            (Vec2d?)null;
+
+        if (delta is not { } movement)
+            return false;
+
+        return TryMove(movement, maze, screen, offset);
+    }
 
     public bool TryMove(Vec2d delta, Maze maze, ConsoleScreen screen, Vec2d offset)
     {

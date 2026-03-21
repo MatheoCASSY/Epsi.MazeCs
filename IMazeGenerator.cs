@@ -1,0 +1,4 @@
+interface IMazeGenerator
+{
+    CellType[,] Generate();
+}

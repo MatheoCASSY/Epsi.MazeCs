@@ -10,7 +10,7 @@ sealed class Maze
     public int Height { get; }
     public Vec2d StartPosition { get; }
 
-    public Maze(MazeGen gen)
+    public Maze(IMazeGenerator gen)
     {
         _grid = gen.Generate();
         Width  = _grid.GetLength(0);

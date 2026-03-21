@@ -1,4 +1,4 @@
-sealed class MazeGen(int width, int height)
+sealed class MazeGen(int width, int height) : IMazeGenerator
 {
     private static readonly Vec2d[] Directions =
     [
