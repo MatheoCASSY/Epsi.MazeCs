@@ -2,10 +2,17 @@
 
 Jeu de labyrinthe ASCII en C# (console) : vous déplacez `@` dans un labyrinthe généré procéduralement pour atteindre la sortie `★`.
 
+Le labyrinthe contient :
+- des murs (`Wall`),
+- des salles (`Room`) pouvant contenir des objets,
+- des portes (`Door`) verrouillées,
+- des clés (`Key`) persistantes dans l'inventaire,
+- des pièces (`Coin`) qui rapportent des points.
+
 ## Prérequis
 
-- SDK .NET `9.0` (le projet cible `net9.0`)
-- Un terminal compatible Unicode (Windows Terminal recommandé pour un meilleur rendu)
+- SDK .NET `9.0` (projet cible `net9.0`)
+- Terminal compatible Unicode (Windows Terminal recommandé)
 
 Vérifier la version installée :
 
@@ -21,115 +28,88 @@ Depuis la racine du repo :
 dotnet run --project Program.csproj
 ```
 
-Alternative (si vous êtes déjà dans le dossier du `.csproj`) :
-
-```bash
-dotnet run
-```
-
 ## Contrôles
 
 - `Z` ou `↑` : monter
 - `S` ou `↓` : descendre
 - `Q` ou `←` : gauche
 - `D` ou `→` : droite
+- `E` ou `Espace` : ramasser l'objet de la case actuelle
 - `Échap` : quitter
 
-## Schéma global du fonctionnement
+## Règles de jeu
+
+- Les portes sont générées avec une probabilité configurable (`doorSpawnProbability`).
+- Chaque porte instancie sa propre clé à la création.
+- Les clés sont placées par `MazeGen` sur le chemin du joueur (retour de récursion) avant la porte correspondante.
+- Le joueur ne peut franchir une cellule que via le polymorphisme de `Cell` (`CanBeEnteredBy`) ; `Player` ne connaît pas les types concrets (`Door`, `Wall`, etc.).
+
+## Diagramme des classes
 
 ```mermaid
-flowchart TD
-		A[Program.cs - Main] --> B[MazeGen.Generate]
-		B --> C[Maze..ctor]
-		C --> D[Maze.Draw]
-		A --> E[Player..ctor]
-		E --> F[Player.Draw]
-		A --> G[Boucle de jeu]
-		G --> H[KeyboardController.ReadInput]
-		H -->|Déplacement| I[Player.TryMove]
-		I --> J[Maze.IsInBounds]
-		I --> K[Maze.GetCell]
-		I --> L[Maze.DrawCell]
-		I --> M[Player.Draw]
-		I -->|Sortie atteinte| N[State.Won]
-		H -->|Echap| O[State.Canceled]
-		N --> P[ConsoleScreen.DrawFramedText]
-		O --> Q[ConsoleScreen.DrawText]
+classDiagram
+	class Cell {
+		<<abstract>>
+		+bool IsSolid
+		+bool IsStart
+		+bool IsExit
+		+bool CanBeEnteredBy(IReadOnlyList~ICollectable~)
+		+Draw(IGridDisplay, Vec2d)
+	}
+
+	class Wall
+	class Door
+	class Room
+	class Maze
+	class Player
+	class MazeGen
+	class Key
+	class Coin
+	class KeyboardController
+	class ConsoleScreen
+
+	class ICollectable {
+		<<interface>>
+	}
+	class IController {
+		<<interface>>
+	}
+	class IMazeGenerator {
+		<<interface>>
+	}
+	class IGridDisplay {
+		<<interface>>
+	}
+
+	Cell <|-- Wall
+	Cell <|-- Door
+	Cell <|-- Room
+
+	Door --> Key : creates
+	Room o-- ICollectable : contains
+
+	Key ..|> ICollectable
+	Coin ..|> ICollectable
+
+	Maze ..> IMazeGenerator
+	MazeGen ..|> IMazeGenerator
+
+	Player --> Maze
+	Player --> IController
+	Player --> IGridDisplay
+	Player --> ICollectable : inventory
+	Maze ..> IGridDisplay
 ```
 
-## Détail des fonctions
+## Architecture rapide
 
-### Program.cs
+- `Program.cs` : composition racine et boucle de jeu.
+- `MazeGen` : génération du labyrinthe (DFS), placement des portes et des clés.
+- `Maze` : stockage de la grille `Cell[,]`, rendu et accès aux cellules.
+- `Player` : déplacements, ramassage, score et inventaire.
+- `Cell` : point d'extension polymorphe des comportements de case.
 
-- Point d’entrée : initialise les composants (`KeyboardController`, `ConsoleScreen`, `Maze`, `Player`).
-- Ajuste dynamiquement la taille du labyrinthe selon `Console.BufferWidth` / `Console.BufferHeight`.
-- Dessine l’interface initiale (titre, labyrinthe, joueur, aide).
-- Exécute la boucle principale : lit les entrées, applique le déplacement, change l’état (`Playing`, `Won`, `Canceled`).
-- Affiche le message final puis attend une touche.
+## Notes
 
-### MazeGen.cs
-
-- `Generate()` :
-	- Crée une grille remplie de murs (`Wall`).
-	- Lance un DFS récursif (`GenerateRec`) en partant de `(0,0)` pour creuser des couloirs.
-	- Mélange l’ordre des directions via un tableau de permutations (`Orders`) pour varier les labyrinthes.
-	- Place explicitement la case de départ (`Start`) et la case de sortie (`Exit`).
-	- Retourne la grille finale `CellType[,]`.
-- `GenerateRec(position)` (fonction locale) :
-	- Marque la case courante en couloir.
-	- Tente des sauts de 2 cases dans chaque direction.
-	- Si la cible est valide et encore murée, ouvre la case intermédiaire puis recurse.
-
-### Maze.cs
-
-- `Maze(MazeGen gen)` : génère la grille, calcule `Width`/`Height`, détecte la position de départ.
-- `GetCell(Vec2d position)` : retourne le type de case (`Wall`, `Corridor`, `Start`, `Exit`).
-- `IsInBounds(Vec2d position)` : vérifie qu’une position est dans les limites.
-- `Draw(ConsoleScreen screen, Vec2d offset)` : dessine tout le labyrinthe case par case.
-- `DrawCell(ConsoleScreen screen, Vec2d offset, Vec2d position)` : dessine une case unique avec son symbole et sa couleur.
-- `FindStart()` : parcourt la grille pour trouver la case `Start`.
-
-### Player.cs
-
-- `Player(Vec2d startPosition)` : initialise le joueur sur la case de départ.
-- `TryMove(Vec2d delta, Maze maze, ConsoleScreen screen, Vec2d offset)` :
-	- Calcule la prochaine position.
-	- Refuse le déplacement si hors bornes ou mur.
-	- Met à jour l’affichage (redessine l’ancienne case puis le joueur).
-	- Retourne `true` si la sortie est atteinte.
-- `Draw(ConsoleScreen screen, Vec2d offset)` : dessine le joueur (`@`).
-
-### KeyboardController.cs
-
-- `Instructions` : texte d’aide affiché en bas de l’écran.
-- `ReadInput()` : lit une touche et renvoie :
-	- un vecteur de déplacement (`Vec2d`) si touche directionnelle,
-	- un drapeau d’annulation si `Escape`,
-	- ou aucune action pour les autres touches.
-
-### ConsoleScreen.cs
-
-- `DrawText(Vec2d position, string text, ConsoleColor? color = null)` :
-	- Sécurise les coordonnées,
-	- Positionne le curseur,
-	- Applique la couleur,
-	- Écrit le texte,
-	- Gère les erreurs transitoires de redimensionnement console.
-- `DrawFramedText(Vec2d position, string text, ConsoleColor? color = null)` :
-	- Découpe le texte en lignes,
-	- Calcule la largeur max,
-	- Dessine une boîte Unicode autour,
-	- Retourne la hauteur dessinée.
-
-### Vec2d.cs
-
-- `Zero` : vecteur `(0,0)`.
-- `Add(Vec2d other)` : addition vectorielle.
-- `Multiply(int factor)` : multiplication scalaire.
-- `Midpoint(Vec2d other)` : point milieu entre deux positions.
-- `IsInBounds(int width, int height)` : test de limites.
-
-### Enums
-
-- `State` : état de la partie (`Playing`, `Won`, `Canceled`).
-- `CellType` : type de cellule du labyrinthe (`Corridor`, `Wall`, `Start`, `Exit`).
+- `StartRoom` et `ExitRoom` héritent de `Room` pour marquer le départ et la sortie.
+- Le score est lié aux collectables non persistants (ex: `Coin`), tandis que les clés restent dans l'inventaire.

@@ -1,4 +1,4 @@
-sealed class ExitRoom : Room
+sealed class ExitRoom(ICollectable? collectable = null) : Room(collectable)
 {
     public override bool IsExit => true;
 

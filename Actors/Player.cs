@@ -44,7 +44,7 @@ sealed class Player(Vec2d startPosition, IController controller)
 
         var nextCell = maze.GetCell(next);
 
-        if (nextCell.IsSolid)
+        if (!nextCell.CanBeEnteredBy(_inventory))
             return false;
 
         var reachedExit = nextCell.IsExit;

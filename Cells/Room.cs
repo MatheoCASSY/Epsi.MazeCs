@@ -4,6 +4,11 @@ class Room(ICollectable? collectable = null) : Cell
     private ICollectable? _collectable = collectable;
     public ICollectable? Collectable => _collectable;
 
+    public void SetCollectable(ICollectable collectable)
+    {
+        _collectable = collectable;
+    }
+
     public ICollectable? TakeCollectable()
     {
         var item = _collectable;
@@ -15,7 +20,7 @@ class Room(ICollectable? collectable = null) : Cell
     {
         if (_collectable is not null)
         {
-            screen.DrawText(position, "¤", ConsoleColor.Yellow);
+            screen.DrawText(position, _collectable.Glyph, _collectable.Color);
             return;
         }
 

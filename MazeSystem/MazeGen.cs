@@ -1,4 +1,4 @@
-sealed class MazeGen(int width, int height, double coinProbability) : IMazeGenerator
+sealed class MazeGen(int width, int height, double coinProbability, double doorProbability) : IMazeGenerator
 {
     private static readonly Vec2d[] Directions =
     [
@@ -20,9 +20,12 @@ sealed class MazeGen(int width, int height, double coinProbability) : IMazeGener
     {
         if (coinProbability < 0 || coinProbability > 1)
             throw new ArgumentOutOfRangeException(nameof(coinProbability), "Coin probability must be between 0 and 1.");
+        if (doorProbability < 0 || doorProbability > 1)
+            throw new ArgumentOutOfRangeException(nameof(doorProbability), "Door probability must be between 0 and 1.");
 
         var grid = new Cell[width, height];
         var rng = new Random();
+        var exit = new Vec2d((width - 1) & ~1, (height - 1) & ~1);
 
         for (var y = 0; y < height; y++)
             for (var x = 0; x < width; x++)
@@ -31,14 +34,16 @@ sealed class MazeGen(int width, int height, double coinProbability) : IMazeGener
         var start = Vec2d.Zero;
         GenerateRec(start);
 
-        grid[start.X, start.Y] = new StartRoom();
-        grid[(width - 1) & ~1, (height - 1) & ~1] = new ExitRoom();
+        grid[start.X, start.Y] = new StartRoom((grid[start.X, start.Y] as Room)?.Collectable);
+        grid[exit.X, exit.Y] = new ExitRoom((grid[exit.X, exit.Y] as Room)?.Collectable);
 
         return grid;
 
-        void GenerateRec(Vec2d position)
+        bool GenerateRec(Vec2d position)
         {
             grid[position.X, position.Y] = CreateRoom(rng);
+            var leadsToExit = position == exit;
+
             foreach (var dir in Orders[rng.Next(Orders.Length)])
             {
                 var direction = Directions[dir];
@@ -46,10 +51,28 @@ sealed class MazeGen(int width, int height, double coinProbability) : IMazeGener
 
                 if (next.IsInBounds(width, height) && grid[next.X, next.Y].IsSolid)
                 {
-                    grid[position.Midpoint(next).X, position.Midpoint(next).Y] = CreateRoom(rng);
-                    GenerateRec(next);
+                    var passage = position.Midpoint(next);
+                    Door? door = null;
+
+                    if (rng.NextDouble() < doorProbability)
+                    {
+                        door = new Door();
+                        grid[passage.X, passage.Y] = door;
+                    }
+                    else
+                    {
+                        grid[passage.X, passage.Y] = CreateRoom(rng);
+                    }
+
+                    var childLeadsToExit = GenerateRec(next);
+                    if (childLeadsToExit && door is not null && grid[position.X, position.Y] is Room room)
+                        door.PlaceKeyIn(room);
+
+                    leadsToExit |= childLeadsToExit;
                 }
             }
+
+            return leadsToExit;
         }
 
         Room CreateRoom(Random random)

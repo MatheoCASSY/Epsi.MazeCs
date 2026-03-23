@@ -7,6 +7,7 @@ const int offsetX = 0;
 
 const int marginYMessage = 3;
 const double coinSpawnProbability = 0.15;
+const double doorSpawnProbability = 0.1;
 
 const string sHeader    = "🏃 LABYRINTHE ASCII C# 🏃";
 const string sWin       = "🎉  FÉLICITATIONS !  🎉\nVous avez trouvé la sortie !";
@@ -25,7 +26,7 @@ var maxMazeWidth  = Math.Max(3, Console.BufferWidth - offsetX);
 var maxMazeHeight = Math.Max(3, Console.BufferHeight - offsetY - 1); // Keep one line for controls
 var mazeWidth     = Math.Min(requestedWidth, maxMazeWidth);
 var mazeHeight    = Math.Min(requestedHeight, maxMazeHeight);
-var maze          = new Maze(new MazeGen(mazeWidth, mazeHeight, coinSpawnProbability));
+var maze          = new Maze(new MazeGen(mazeWidth, mazeHeight, coinSpawnProbability, doorSpawnProbability));
 var player   = new Player(maze.StartPosition, keyboard);
 var offset   = new Vec2d(offsetX, offsetY);
 var mode     = State.Playing;
